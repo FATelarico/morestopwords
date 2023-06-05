@@ -32,64 +32,116 @@ stopwords <- function(lang = 'en') {
   
 }
 
-#' Returns all the ISO 639-1 code available in the Stopwords ISO library
+#' Returns ISO codes and names for all language or only those available in this package
 #'
-#' See the relevant \href{https://en.wikipedia.org/wiki/ISO_639-1}{Wikipedia article} for details of the language code.
+#' See the relevant \href{https://en.wikipedia.org/wiki/ISO_639-1}{Wikipedia article} for details on the language codes.
 #' 
-#' @returns A data frame with a row for each supported languages and columns for the several ISO code (639-2, 639-3, 639-1) and the name.
+#' Note that: \itemize{
+#'  \item the ISO 639-1 code for mainland Chinese was changed to \code{zh-cn}.
+#'  \item A list of stop words in the variety of Chinese spoken in the island of Taiwan is accessible using the ISO 639-1 \code{zh-tw} or the name \code{'Chinese Taiwan'}.
+#'  \item Ancient Greek has been assigned an artifact ISO 639-1 code (\code{gr}) because it had none. Its ISO 639-2 and 639-3 codes are both \code{grc}.
+#' }
+#' 
+#' @param available \emph{logical}, whether to return only the languages supported in this package.
+#' 
+#' @returns A data frame with a row for each languages (only those supported if \code{available} is \code{TRUE}) and columns for the several ISO codes (639-2, 639-3, 639-1) and the name.
 #' 
 #' @export
+#' 
+#' @examples
+#' # Return all languages in the ISO 639-2/3 standard
+#' languages()
 
-languages <- function() {
+languages <- function(available = TRUE) {
   
   # Extract language codes
   code <- names(stopwordsISO)
   
   # Prepare the table
-  code <- ISOcodes[match(code, ISOcodes$`ISO639-1`),]
-  rownames(code) <- NULL
+  if(available){
+    code <- ISOcodes[match(code, ISOcodes$`ISO639-1`),]
+    rownames(code) <- NULL
+  }
   
   code
 }
 
-
-
-
-#' Returns all the ISO 639-1 code available in the Stopwords ISO library
+#' Removes stop words for a string the language of which is known
 #'
-#' See \url{https://en.wikipedia.org/wiki/ISO_639-1} for details of the language code.
+#' @param str A string or a vector of strings which to delete the stop words from
+#' @param lang Either: \itemize{
+#'  \item \code{'auto'} in which case \code{cld2} is used to perform language detection; or
+#'  \item A string (or a vector of strings, depending on \code{str}) representing an ISO 639-2/3 or a language name from which to derive a ISO 639-2 code (for language names, string matching is performed)
+#' }
+#' @param fallback Fallback language in case \code{cld2} fails to detect the language of the manually-specified string does not match a supported language. Default to \code{'English'}.
 #' 
-#' @param lang Either an ISO 639-2/3 or a language name from which to derive a ISO 639-2 code. For language names performs string matching.
-#' 
-#' @returns A character vector containing the two-letter ISO 639-1 code associated to the requested language.
+#' @returns A strings (or a vector, depending on \code{str}) corresponding to the string/s \code{str} without stop words for the language/s \code{lang}.
 #'
 #' @export
-
-match.lang <- function(lang){
-  df <- languages()
-  df$name <- tolower(df$name)
-  lang <- tolower(lang)
+#' 
+#' @examples
+#' # Multiple strings in different languages
+#' remove.stopwords(str = c(Gibberish = 'dadas',
+#'                          Catalan = 'Adeu amic meu',
+#'                          Irish = 'Slan a chara',
+#'                          French = 'Je suis en Allemagne',
+#'                          German = 'Eich liebe Deutschland'),
+#'                  # Various ways of indicating the language
+#'                  lang = c(NA, 'cata', 'Iris', 'fr', 'deu'),
+#'                  # Yet another way
+#'                  fallback = 'english'
+#'                  )
+#' 
+remove.stopwords <- function(str, lang = 'auto', fallback = 'English'){
+  # Code of the fallback language
+  fallback <- match.lang(fallback)
   
-  pos <- ifelse(test = nchar(lang)==2,
-                # Possible 2-letter code
-                yes = which(df$`ISO639-1`==lang),
-                no = ifelse(test = nchar(lang)>3,
-                       # Possible language name
-                       yes = which(df$name==match.arg(lang, df$name)),
-                       # Possible 3-letter code
-                       no = ifelse(test = any(lang%in%df$`ISO639-2`),
-                                    # Is it a IS O639-2 code?
-                                    yes = which(df$`ISO639-2`==lang),
-                                    # Otherwise, try as a ISO 639-3 code
-                                    no = which(df$`ISO639-3`==lang))))
-  
-  if(is.na(pos)){
-    # No match
-    stop('Not a valid language (code): ', lang)
+  # Language detection
+  if(length(lang) == 1 && lang == 'auto'){
+    # Whether it is possible to use `cld2`
+    has_cld2 <- requireNamespace('cld2', quietly = TRUE)
+    
+    if(has_cld2){ # Possible
+      # Detect language
+      lang <- cld2::detect_language(str, lang_code = TRUE)
+      
+      # If unknown
+      # Works both when `str` is a string and when it is a vector of strings
+      if(any(is.na(lang))){
+        lang[is.na(lang)] <- fallback
+      }
+    } else { # Impossible
+      # Use fallback language
+      fallback_name <- ISOcodes$name[which(ISOcodes$`ISO639-1`==fallback)]
+      lang <- fallback
+      # Warn the user
+      warning(paste('Language detection requires the package `cld2`\n',
+                    'Reverting to fallback language:', fallback_name))
+      
+    }
   } else {
-    # Return match
-    df$`ISO639-1`[pos]
+    # If unknown
+    # Works both when `str` is a string and when it is a vector of strings
+    if(any(is.na(lang))){
+      lang[is.na(lang)] <- fallback
+    }
+    
+    # Code language/s
+    lang <- if(length(lang>1)){
+      lapply(lang, match.lang)|> unlist()
+    } else {
+      match.lang(lang)
+    }
+    
   }
+  
+  out <- if(length(str)>1){
+    lapply(seq_along(str), function(w){
+      del.stopwords(str = str[[w]], lang = lang[w])
+    })
+  } else {
+    del.stopwords(str = str, lang = lang)
+  }
+  
+  out
 }
-
-
