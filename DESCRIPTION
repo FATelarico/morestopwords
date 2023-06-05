@@ -1,14 +1,14 @@
-Package: stopwords
+Package: simplestopwords
 Type: Package
 Title: Collection of Stopwords from StopwordsISO
 Version: 0.2.0
-Authors@R: 
+Authors@R:
+    person('Fabio Ashtar', 'Telarico', email = 'Fabio-Ashtar.Telarico@fdv.uni-lj.si',
+                  role = c('aut', 'cre'), comment = c(ORCID = '0000-0002-8740-7078')) 
     person('Kohei', 'Watanabe', email = 'watanabe.kohei@gmail.com',
                   role = c('cre'))
-    person('Fabio Ashtar', 'Telarico', email = 'Fabio-Ashtar.Telarico@fdv.uni-lj.si',
-                  role = c('aut', 'cre'), comment = c(ORCID = '0000-0002-8740-7078'))
 Maintainer: Fabio Ashtar Telarico <Fabio-Ashtar.Telarico@fdv.uni-lj.si>
-Description: This package makes multi-lingual text analysis easier by providing R interface to the Stopwords ISO library.
+Description: A standalone, unofficial R interface to the StopwordsISO repository that work out of the box.
 License: MIT + file LICENSE
 URL: https://fatelarico.github.io/stopwords
 BugReports: https://github.com/FATelarico/stopwords/issues
