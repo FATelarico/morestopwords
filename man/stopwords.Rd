@@ -2,22 +2,28 @@
 % Please edit documentation in R/stopwords.R
 \name{stopwords}
 \alias{stopwords}
-\title{Collection of stopwords in multiple langauges}
+\title{Collection of stopwords in multiple languages}
 \usage{
-stopwords(langauge = "en")
+stopwords(lang = "en")
 }
 \arguments{
-\item{langauge}{specify language of stopwords by ISO 639-1 code}
+\item{lang}{Language for which to retrieve the stop word among those supported by \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordISO}. This parameters supports: \itemize{
+ \item three-letter ISO 639-2/3 codes (e.g., \code{'eng'});
+ \item two-letter ISO639-1 codes (\code{'en'});
+ \item names based ISO 639-2 codes (\code{'English'} or \code{'english'}) and their unambiguous substrings (\code{'engl'}, \code{'engli'}, etc.).
+}}
 }
 \value{
-a character cector containing stopwords
+A character vector containing the stop words from the selected language as listed in the \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordISO} repository.
 }
 \description{
-This function returns stopwrods colated for Stopwords ISO library
-(\url{https://github.com/stopwords-iso/stopwords-iso}).
+This function returns stop words contained in the \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordsISO} repository.
 }
 \examples{
-languages() # returns all available languages
-stopwords('en')
-stopwords('jp')
+# They all return the correct list of stop words!
+
+stopwords('German')
+stopwords('germ')
+stopwords('de')
+stopwords('deu')
 }

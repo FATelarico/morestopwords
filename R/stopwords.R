@@ -1,57 +1,95 @@
-#' Collection of stopwords in multiple langauges
+#' Collection of stopwords in multiple languages
 #'
-#' This function returns stopwrods colated for Stopwords ISO library
-#' (\url{https://github.com/stopwords-iso/stopwords-iso}).
-#' @param langauge specify language of stopwords by ISO 639-1 code
-#' @return a character cector containing stopwords
+#' This function returns stop words contained in the \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordsISO} repository.
+#' 
+#' @param lang Language for which to retrieve the stop word among those supported by \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordISO}. This parameters supports: \itemize{
+#'  \item three-letter ISO 639-2/3 codes (e.g., \code{'eng'});
+#'  \item two-letter ISO639-1 codes (\code{'en'});
+#'  \item names based ISO 639-2 codes (\code{'English'} or \code{'english'}) and their unambiguous substrings (\code{'engl'}, \code{'engli'}, etc.).
+#' }
+#' 
+#' @return A character vector containing the stop words from the selected language as listed in the \href{https://github.com/stopwords-iso/stopwords-iso}{StopwordISO} repository.
+#' 
 #' @export
-#'
+#' 
 #' @examples
-#' languages() # returns all available languages
-#' stopwords('en')
-#' stopwords('jp')
-stopwords <- function(langauge = 'en') {
-    langauge <- tolower(langauge)
-    load('data/data_char_stopwords_iso.RData')
-    if (!langauge %in% names(data_char_stopwords_iso))
-        stop(paste0("\"", langauge, "\" is not in Stopwords ISO library."))
-    data_char_stopwords_iso[[langauge]]
+#' # They all return the correct list of stop words!
+#' 
+#' stopwords('German')
+#' stopwords('germ')
+#' stopwords('de')
+#' stopwords('deu')
+
+stopwords <- function(lang = 'en') {
+  
+  lang <- match.lang(lang = lang)
+  
+  if (lang %in% names(stopwordsISO)){
+    stopwordsISO[[lang]]
+  } else {
+    stop(paste0(lang, ' is not supported by `StopwordsISO`!'))
+  }
+  
 }
 
 #' Returns all the ISO 639-1 code available in the Stopwords ISO library
 #'
-#' See \url{https://en.wikipedia.org/wiki/ISO_639-1} for details of the language code.
+#' See the relevant \href{https://en.wikipedia.org/wiki/ISO_639-1}{Wikipedia article} for details of the language code.
+#' 
+#' @returns A data frame with a row for each supported languages and columns for the several ISO code (639-2, 639-3, 639-1) and the name.
+#' 
 #' @export
-#' @examples
-#' languages()
+
 languages <- function() {
-    load('data/data_char_stopwords_iso.RData')
-    code <- names(data_char_stopwords_iso)
-    labels <- na.omit(ISOcodes::ISO_639_2[,c('Alpha_2', 'Name')])
-    names(code) <- labels$Name[match(code, labels$Alpha_2)]
-    return(code)
+  
+  # Extract language codes
+  code <- names(stopwordsISO)
+  
+  # Prepare the table
+  code <- ISOcodes[match(code, ISOcodes$`ISO639-1`),]
+  rownames(code) <- NULL
+  
+  code
 }
 
-#' Internal function to update the data file
-#' @keywords internal
-#' @examples
-#' stopwords:::update_stopwords()
-update_stopwords <- function() {
 
-    url <- 'https://raw.githubusercontent.com/stopwords-iso/stopwords-iso/master/stopwords-iso.json'
-    json <- paste0(readLines(url, warn = FALSE), collapse="")
-    data_char_stopwords_iso <- rjson::fromJSON(json)
-    cat('Downloaded stopwords for', length(data), 'langauges.\n')
-    path <- 'data/data_char_stopwords_iso.RData'
-    save(data_char_stopwords_iso, file = path)
-    cat('Saved to', path, '.\n')
 
-}
 
-#' RData file created from Stopwords ISO library
+#' Returns all the ISO 639-1 code available in the Stopwords ISO library
 #'
-#' @name data_char_stopwords_iso
-#' @docType data
-#' @keywords data
-NULL
+#' See \url{https://en.wikipedia.org/wiki/ISO_639-1} for details of the language code.
+#' 
+#' @param lang Either an ISO 639-2/3 or a language name from which to derive a ISO 639-2 code. For language names performs string matching.
+#' 
+#' @returns A character vector containing the two-letter ISO 639-1 code associated to the requested language.
+#'
+#' @export
+
+match.lang <- function(lang){
+  df <- languages()
+  df$name <- tolower(df$name)
+  lang <- tolower(lang)
+  
+  pos <- ifelse(test = nchar(lang)==2,
+                # Possible 2-letter code
+                yes = which(df$`ISO639-1`==lang),
+                no = ifelse(test = nchar(lang)>3,
+                       # Possible language name
+                       yes = which(df$name==match.arg(lang, df$name)),
+                       # Possible 3-letter code
+                       no = ifelse(test = any(lang%in%df$`ISO639-2`),
+                                    # Is it a IS O639-2 code?
+                                    yes = which(df$`ISO639-2`==lang),
+                                    # Otherwise, try as a ISO 639-3 code
+                                    no = which(df$`ISO639-3`==lang))))
+  
+  if(is.na(pos)){
+    # No match
+    stop('Not a valid language (code): ', lang)
+  } else {
+    # Return match
+    df$`ISO639-1`[pos]
+  }
+}
+
 

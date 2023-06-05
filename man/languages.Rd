@@ -6,9 +6,9 @@
 \usage{
 languages()
 }
-\description{
-See \url{https://en.wikipedia.org/wiki/ISO_639-1} for details of the language code.
+\value{
+A data frame with a row for each supported languages and columns for the several ISO code (639-2, 639-3, 639-1) and the name.
 }
-\examples{
-languages()
+\description{
+See the relevant \href{https://en.wikipedia.org/wiki/ISO_639-1}{Wikipedia article} for details of the language code.
 }
